@@ -8,5 +8,5 @@ python train_rotation.py --data data/voc-seed.yaml --cfg models/yolov5s-seed.yam
 
 ### detect
 ```
-pythondetect_rotation.py --source ./data --img-size 640 --weights runs/train/exp1/weights/best.pt --conf 0.45 --save-txt
+python detect_rotation.py --source ./data --img-size 640 --weights runs/train/exp1/weights/best.pt --conf 0.45 --save-txt
 ```
