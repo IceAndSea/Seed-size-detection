@@ -8,8 +8,8 @@ import yaml
 from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).parent.parent.parent))  # add utils/ to path
-from utils.datasets import LoadImagesAndLabels
-from utils.datasets import img2label_paths
+from utils.datasets_rotation import LoadImagesAndLabels_v2
+from utils.datasets_rotation import img2label_paths
 from utils.general import colorstr, check_dataset, check_file
 
 try:

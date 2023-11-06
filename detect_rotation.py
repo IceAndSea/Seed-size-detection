@@ -15,22 +15,18 @@ import xlwt
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
-from numpy import random
 import xlrd
 from xlutils.copy import copy
 import os.path as osp
 
 from models.experimental import attempt_load
-from utils.datasets import LoadStreams, LoadImages,LoadImages_files
+from utils.datasets_rotation import LoadStreams, LoadImages_files
 from utils.general import (
-    check_img_size, non_max_suppression_rotation, apply_classifier, scale_coords,
-    xyxy2xywh, strip_optimizer, set_logging,increment_path)
-from utils.torch_utils import select_device, load_classifier, time_synchronized
-from utils.remote_utils import crop_xyxy2ori_xyxy,nms,draw_clsdet,draw_clsdet_rotation,rboxes2points,draw_one_box
+    check_img_size, non_max_suppression_rotation, strip_optimizer, set_logging,increment_path)
+from utils.torch_utils import select_device, load_classifier
+from utils.remote_utils import crop_xyxy2ori_xyxy, draw_one_box
+from utils.eage import count_pixel
 from detectron2.layers import nms_rotated
-
-from tools.add_utils import move_files,txt_xml
-from tools.eage_1 import count_pixel
 
 
 def detect(save_img=False):
@@ -88,25 +84,27 @@ def detect(save_img=False):
     if os.path.exists(save_dir):  # output dir
         shutil.rmtree(save_dir)  # delete dir
     os.makedirs(save_dir)  # make new dir
-    if os.path.exists(svae_txt_dir):  # output dir
-        shutil.rmtree(svae_txt_dir)  # delete dir
-    os.makedirs(svae_txt_dir)  # make new dir
+
+    if save_txt:
+        if os.path.exists(svae_txt_dir):  # output dir
+            shutil.rmtree(svae_txt_dir)  # delete dir
+        os.makedirs(svae_txt_dir)  # make new dir
+
     if os.path.exists(save_excel_dir):  # output dir
         shutil.rmtree(save_excel_dir)  # delete dir
     os.makedirs(save_excel_dir)  # make new dir
 
     xlspath = str(Path(out) / 'meng_result.xls')
     xls_name = ['name_index', 'w_means-(mm)', 'h_means-(mm)', 'rice_numbers']
-    # 创建excel文件, 如果已有就会覆盖
     workbook = xlwt.Workbook(encoding='utf-8')
     workbook.add_sheet('L0')
     workbook.save(xlspath)
-    # 写入数据:
+
     wb = xlrd.open_workbook(xlspath)
-    nrows = wb.sheet_by_index(0).nrows  # 当前行数
+    nrows = wb.sheet_by_index(0).nrows
     copywb = copy(wb)
     targetsheet = copywb.get_sheet(0)
-    ncols = 1  # 写第一行名字
+    ncols = 1
     for celldata in xls_name:
         targetsheet.write(nrows, ncols, celldata)
         ncols += 1
@@ -126,16 +124,16 @@ def detect(save_img=False):
         txt_path = str(Path(svae_txt_dir) / Path(p).stem) + ('_%g' % dataset.frame if dataset.mode == 'video' else '')
 
         per_xlspath = str(Path(save_excel_dir) / Path(p).stem) + '.xls'
-        # 创建excel文件, 如果已有就会覆盖
+
         per_workbook = xlwt.Workbook(encoding='utf-8')
         per_workbook.add_sheet('L0')
         per_workbook.save(per_xlspath)
-        # 写入数据:
+
         per_wb = xlrd.open_workbook(per_xlspath)
-        per_nrows = per_wb.sheet_by_index(0).nrows  # 当前行数
+        per_nrows = per_wb.sheet_by_index(0).nrows
         per_copywb = copy(per_wb)
         per_targetsheet = per_copywb.get_sheet(0)
-        per_ncols = 0  # 写第一行名字
+        per_ncols = 0
         for per_celldata in per_xls_name:
             per_targetsheet.write(per_nrows, per_ncols, per_celldata)
             per_ncols += 1
@@ -160,7 +158,7 @@ def detect(save_img=False):
                                                     agnostic=opt.agnostic_nms)
 
                 if len(pred[0])>0:
-                    ori_pred=crop_xyxy2ori_xyxy(pred[0],x_shift,y_shift)####
+                    ori_pred=crop_xyxy2ori_xyxy(pred[0],x_shift,y_shift)
                     ori_preds+=ori_pred
         ori_preds=numpy.array(ori_preds)
         ori_preds = torch.from_numpy(ori_preds).to(device)
@@ -172,7 +170,7 @@ def detect(save_img=False):
         objects_i = nms_rotated(boxes, scores, opt.iou_thres)
         ori_preds = ori_preds[objects_i]
         if ori_preds is not None and len(ori_preds):
-            pred_data = [pd.cpu().numpy().tolist() for pd in ori_preds]  ###
+            pred_data = [pd.cpu().numpy().tolist() for pd in ori_preds]
             for c in ori_preds[:, -1].unique():
                 n = (ori_preds[:, -1] == c).sum()  # detections per class
                 s += '%g %ss, ' % (n, names[int(c)])  # add to string
@@ -202,19 +200,19 @@ def detect(save_img=False):
                 print(f'{save_path} saved!')
 
         per_images_pixel = count_pixel(p)
-        # 写数据
+
         ncols = 0
         targetsheet.write(nrows, ncols, nrows)
         ncols += 1
         targetsheet.write(nrows, ncols, str(osp.splitext(osp.split(Path(p))[-1])[0]))
         ncols += 1
         w_array = numpy.array(w_list)
-        w_means = round(w_array.mean() * per_images_pixel, 4)####################
+        w_means = round(w_array.mean() * per_images_pixel, 4)
         # w_means = round(w_array.mean() , 4)
         targetsheet.write(nrows, ncols, w_means)
         ncols += 1
         h_array = numpy.array(h_list)
-        h_means = round(h_array.mean() * per_images_pixel, 4)####################
+        h_means = round(h_array.mean() * per_images_pixel, 4)
         # h_means = round(h_array.mean() , 4)
         targetsheet.write(nrows, ncols, h_means)
         ncols += 1
@@ -240,8 +238,8 @@ def detect(save_img=False):
             # print('write success --- line is {}, data is : {}'.format(nrows + 1, rowdata))
             per_nrows += 1
             # print(w_item)
-        per_copywb.save(per_xlspath)  # 保存修改
-    copywb.save(xlspath)  # 保存修改
+        per_copywb.save(per_xlspath)
+    copywb.save(xlspath)
 
 
     if save_txt or save_img:

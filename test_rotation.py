@@ -12,13 +12,12 @@ from tqdm import tqdm
 from detectron2._C import box_iou_rotated
 
 from models.experimental import attempt_load
-from utils.datasets import create_dataloader
+from utils.datasets_rotation import create_dataloader_v2
 from utils.general import coco80_to_coco91_class, check_dataset, check_file, check_img_size, check_requirements, \
-    box_iou,xywhtheta2polygons, non_max_suppression, non_max_suppression_rotation, scale_coords, scale_coords_polygon, xyxy2xywh, xywh2xyxy, set_logging, increment_path, colorstr
+    non_max_suppression_rotation, scale_coords_polygon, set_logging, increment_path, colorstr
 from utils.metrics import ap_per_class, ConfusionMatrix
-from utils.plots import plot_images, output_to_target, plot_study_txt
+from utils.plots import plot_study_txt
 from utils.torch_utils import select_device, time_synchronized
-# from rotation_nms import rotation_nms 
 
 
 @torch.no_grad()
@@ -95,7 +94,7 @@ def test(data,
         if device.type != 'cpu':
             model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
         task = task if task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
-        dataloader = create_dataloader(data[task], imgsz, batch_size, gs, single_cls, pad=0.5, rect=True,
+        dataloader = create_dataloader_v2(data[task], imgsz, batch_size, gs, single_cls, pad=0.5, rect=True,
                                        prefix=colorstr(f'{task}: '))[0]
 
     seen = 0

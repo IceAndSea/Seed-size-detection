@@ -43,26 +43,6 @@ cv2.setNumThreads(0)  # prevent OpenCV from multithreading (incompatible with Py
 os.environ['NUMEXPR_MAX_THREADS'] = str(min(os.cpu_count(), 8))  # NumExpr max threads
 
 
-class timeout(contextlib.ContextDecorator):
-    # Usage: @timeout(seconds) decorator or 'with timeout(seconds):' context manager
-    def __init__(self, seconds, *, timeout_msg='', suppress_timeout_errors=True):
-        self.seconds = int(seconds)
-        self.timeout_message = timeout_msg
-        self.suppress = bool(suppress_timeout_errors)
-
-    def _timeout_handler(self, signum, frame):
-        raise TimeoutError(self.timeout_message)
-
-    def __enter__(self):
-        signal.signal(signal.SIGALRM, self._timeout_handler)  # Set handler for SIGALRM
-        signal.alarm(self.seconds)  # start countdown for SIGALRM to be raised
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        signal.alarm(0)  # Cancel SIGALRM if it's scheduled
-        if self.suppress and exc_type is TimeoutError:  # Suppress TimeoutError
-            return True
-
-
 def set_logging(rank=-1, verbose=True):
     logging.basicConfig(
         format="%(message)s",
@@ -94,11 +74,6 @@ def is_colab():
         return True
     except Exception as e:
         return False
-
-
-def is_pip():
-    # Is file in a pip package?
-    return 'site-packages' in Path(__file__).absolute().parts
 
 
 def emojis(str=''):
@@ -248,39 +223,6 @@ def check_dataset(data, autodownload=True):
                 print('Dataset autodownload %s\n' % ('success' if r in (0, None) else 'failure'))  # print result
             else:
                 raise Exception('Dataset not found.')
-
-
-def download(url, dir='.', unzip=True, delete=True, curl=False, threads=1):
-    # Multi-threaded file download and unzip function
-    def download_one(url, dir):
-        # Download 1 file
-        f = dir / Path(url).name  # filename
-        if not f.exists():
-            print(f'Downloading {url} to {f}...')
-            if curl:
-                os.system(f"curl -L '{url}' -o '{f}' --retry 9 -C -")  # curl download, retry and resume on fail
-            else:
-                torch.hub.download_url_to_file(url, f, progress=True)  # torch download
-        if unzip and f.suffix in ('.zip', '.gz'):
-            print(f'Unzipping {f}...')
-            if f.suffix == '.zip':
-                s = f'unzip -qo {f} -d {dir} && rm {f}'  # unzip -quiet -overwrite
-            elif f.suffix == '.gz':
-                s = f'tar xfz {f} --directory {f.parent}'  # unzip
-            if delete:  # delete zip file after unzip
-                s += f' && rm {f}'
-            os.system(s)
-
-    dir = Path(dir)
-    dir.mkdir(parents=True, exist_ok=True)  # make directory
-    if threads > 1:
-        pool = ThreadPool(threads)
-        pool.imap(lambda x: download_one(*x), zip(url, repeat(dir)))  # multi-threaded
-        pool.close()
-        pool.join()
-    else:
-        for u in tuple(url) if isinstance(url, str) else url:
-            download_one(u, dir)
 
 
 def make_divisible(x, divisor):
@@ -560,14 +502,6 @@ def box_iou(box1, box2):
     # inter(N,M) = (rb(N,M,2) - lt(N,M,2)).clamp(0).prod(2)
     inter = (torch.min(box1[:, None, 2:], box2[:, 2:]) - torch.max(box1[:, None, :2], box2[:, :2])).clamp(0).prod(2)
     return inter / (area1[:, None] + area2 - inter)  # iou = inter / (area1 + area2 - inter)
-
-
-def wh_iou(wh1, wh2):
-    # Returns the nxm IoU matrix. wh1 is nx2, wh2 is mx2
-    wh1 = wh1[:, None]  # [N,1,2]
-    wh2 = wh2[None]  # [1,M,2]
-    inter = torch.min(wh1, wh2).prod(2)  # [N,M]
-    return inter / (wh1.prod(2) + wh2.prod(2) - inter)  # iou = inter / (area1 + area2 - inter)
 
 
 def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=None, agnostic=False, multi_label=False,

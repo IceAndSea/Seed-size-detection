@@ -167,7 +167,6 @@ def kmean_anchors(path='./data/coco128.yaml', n=9, img_size=640, thr=4.0, gen=10
     return print_results(k)
 if __name__=='__main__':
     import os
-    # data_path='../data/tzplane.yaml'
     data_path='../data/voc-new.yaml'
     print(os.listdir('../'))
     kmean_anchors(data_path)
