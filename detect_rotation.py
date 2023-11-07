@@ -30,8 +30,8 @@ from detectron2.layers import nms_rotated
 
 
 def detect(save_img=False):
-    out, source, weights, view_img, save_txt, imgsz,overlap = \
-        increment_path(Path(opt.save_dir) / 'exp'), opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size,opt.overlap
+    out, source, weights, view_img, imgsz,overlap = \
+        increment_path(Path(opt.save_dir) / 'exp'), opt.source, opt.weights, opt.view_img, opt.img_size,opt.overlap
     webcam = source.isnumeric() or source.startswith(('rtsp://', 'rtmp://', 'http://')) or source.endswith('.txt')
 
     # Initialize
@@ -84,11 +84,6 @@ def detect(save_img=False):
     if os.path.exists(save_dir):  # output dir
         shutil.rmtree(save_dir)  # delete dir
     os.makedirs(save_dir)  # make new dir
-
-    if save_txt:
-        if os.path.exists(svae_txt_dir):  # output dir
-            shutil.rmtree(svae_txt_dir)  # delete dir
-        os.makedirs(svae_txt_dir)  # make new dir
 
     if os.path.exists(save_excel_dir):  # output dir
         shutil.rmtree(save_excel_dir)  # delete dir
@@ -183,11 +178,6 @@ def detect(save_img=False):
                 w_list.append(max(xywh[2], xywh[3]))
                 h_list.append(min(xywh[2], xywh[3]))
 
-                if save_txt:  # Write to file
-                    line = (cls, *xywh, theta, conf) if opt.save_conf else (cls, *xywh, theta)  # label format
-                    with open(txt_path + '.txt', 'a') as f:
-                        f.write(('%g ' * len(line) + '\n') % line)
-
                 if save_img or view_img:  # Add bbox to image
                     # label = '%s %.2f' % (names[int(cls)], conf)
                     # label = '%s %.2f' % (str(det_index),conf)
@@ -242,7 +232,7 @@ def detect(save_img=False):
     copywb.save(xlspath)
 
 
-    if save_txt or save_img:
+    if save_img:
         print('Results saved to %s' % Path(out))
 
     print('Done. (%.3fs)' % (time.time() - t0))
@@ -257,7 +247,6 @@ if __name__ == '__main__':
     parser.add_argument('--iou-thres', type=float, default=0.45, help='IOU threshold for NMS')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='display results')
-    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--save-dir', type=str, default='inference/output', help='directory to save results')
     parser.add_argument('--overlap', type=int, default=200, help='sub image overlap size (pixels)')
