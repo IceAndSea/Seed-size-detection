@@ -7,7 +7,7 @@
 For additional details, we kindly invite you to refer to the Seed-size-detection (YOLO-rot) publication:  
 [*<ins>Rice seed size measurement using a rotational perception deep learning model</ins>*](https://www.sciencedirect.com/science/article/pii/S0168169922008912)  
 
-We also offer you the **online service version** of Seed-size-detection. Please visit [*http://www.xhhuanglab.cn/tool/SeedRuler.html*]([http://www.deepcba.com](https://u263790-ad15-4e65cb7d.westc.gpuhub.com:8443/IMSFGM/display.jsp)) for more information.
+We also offer you the **online service version** of Seed-size-detection. Please visit [*http://www.xhhuanglab.cn/tool/SeedRuler.html*](https://u263790-ad15-4e65cb7d.westc.gpuhub.com:8443/IMSFGM/display.jsp) for more information.
 
 
 ## command
